@@ -1,0 +1,51 @@
+server:
+  port: 9191
+
+spring:
+  application:
+    name: API-GATEWAY
+  cloud:
+    gateway:
+      routes:
+        - id: USER-SERVICE
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/users/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: USER-SERVICE
+                fallbackurl: forward:/userServiceFallback
+        - id: GYM-SERVICE
+          uri: lb://GYM-SERVICE
+          predicates:
+            - Path=/api/v1beta/gym**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: GYM-SERVICE
+                fallbackurl: forward:/gymServiceFallback
+
+hystrix:
+  command:
+    fallbackcmd:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 4000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: hystrix.stream
+
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    server-url:
+      defaultZone: http://localhost:8761/eureka/
+  instances:
+    hostname: localhost
